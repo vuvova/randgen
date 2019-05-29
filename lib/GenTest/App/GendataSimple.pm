@@ -308,8 +308,8 @@ sub gen_table {
 			$rnd_int1 = ($pick1 == 8 ? $prng->int(0,255) : $prng->digit() );
 			$rnd_int2 = ($pick1 == 8 ? $prng->int(0,255) : $prng->digit() );
 		} else {
-			$rnd_int1 = $pick1 == 9 ? "NULL" : ($pick1 == 8 ? $prng->int(0,255) : $prng->digit() );
-			$rnd_int2 = $pick2 == 9 ? "NULL" : ($pick1 == 8 ? $prng->int(0,255) : $prng->digit() );
+			$rnd_int1 = $pick1 == 9 ? "NULL" : ($pick1 == 8 ? $prng->uint16(0,255) : $prng->digit() );
+			$rnd_int2 = $pick2 == 9 ? "NULL" : ($pick1 == 8 ? $prng->uint16(0,255) : $prng->digit() );
 		}
 
 		# 10% NULLS, 10% '1900-01-01', pick real date/time/datetime for the rest

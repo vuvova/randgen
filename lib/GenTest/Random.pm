@@ -303,6 +303,7 @@ sub uint16 {
 ### Slower, so use uint16 wherever possible.
 sub int {
     my $rand;
+  confess unless $_[1] < 0 or $_[2] - $_[1] > 65535;
     {
         use integer;
         # urand() is manually inlined for efficiency
@@ -340,7 +341,7 @@ sub letter {
 sub hex {
 	my ($prng, $length) = @_;
 	$length = 4 if not defined $length;
-	return '0x'.join ('', map { (0..9,'A'..'F')[$prng->int(0,15)] } (1..$prng->int(1,$length)) );
+  return '0x'.join ('', map { (0..9,'A'..'F')[$prng->uint16(0,15)] } (1..$prng->uint16(1,$length)) );
 }
 
 sub date {
@@ -600,7 +601,7 @@ sub quid {
 sub bit {
 	my ($prng, $length) = @_;
 	$length = 1 if not defined $length;
-	return 'b\''.join ('', map { $prng->int(0,1) } (1..$prng->int(1,$length)) ).'\'';
+  return 'b\''.join ('', map { $prng->uint16(0,1) } (1..$prng->uint16(1,$length)) ).'\'';
 }
 
 #
@@ -633,7 +634,7 @@ sub fieldType {
 	} elsif ($field_type == FIELD_TYPE_LETTER) {
 		return $rand->string(1);
 	} elsif ($field_type == FIELD_TYPE_NUMERIC) {
-		return $rand->int(@{$name2range{$field_full_type}});
+    return $rand->uint16(@{$name2range{$field_full_type}});
 	} elsif ($field_type == FIELD_TYPE_FLOAT) {
 		return $rand->float(@{$name2range{$field_full_type}});
 	} elsif ($field_type == FIELD_TYPE_STRING) {
