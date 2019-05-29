@@ -35,6 +35,8 @@ use GenTest;
 use GenTest::BzrInfo;
 use GenTest::Constants;
 use GenTest::Properties;
+use GenTest::Random::LinearRecorder;
+use GenTest::Random::RePlayer;
 use GenTest::App::GenTest;
 use GenTest::App::GenConfig;
 use DBServer::DBServer;
@@ -75,7 +77,7 @@ my @dsns;
 
 my ($gendata, @basedirs, @mysqld_options, @vardirs, $rpl_mode,
     @engine, $help, $debug, @validators, @reporters, @transformers, 
-    $grammar_file, $skip_recursive_rules,
+    $grammar_file, $skip_recursive_rules, $prng_record, $prng_replay,
     @redefine_files, $seed, $mask, $mask_level, $mem, $rows,
     $varchar_len, $xml_output, $valgrind, @valgrind_options, @vcols, @views,
     $start_dirty, $filter, $build_thread, $sqltrace, $testname,
@@ -181,7 +183,9 @@ my $opt_result = GetOptions(
     'scenario:s' => \$scenario,
     'ps-protocol' => \$ps_protocol,
     'ps_protocol' => \$ps_protocol,
-    'store-binaries|store_binaries' => \$store_binaries
+    'store-binaries|store_binaries' => \$store_binaries,
+    'prng-record=s' => \$prng_record,
+    'prng-replay=s' => \$prng_replay,
 );
 
 if ( osWindows() && !$debug )
@@ -223,6 +227,14 @@ if (!$opt_result) {
     print STDERR "\nERROR: Error occured while reading options\n\n";
     help();
     exit 1;
+}
+
+if ($prng_record) {
+  GenTest::Random::LinearRecorder::set_filename($prng_record);
+}
+
+if ($prng_replay) {
+  GenTest::Random::RePlayer::set_filename($prng_replay);
 }
 
 if (defined $sqltrace) {

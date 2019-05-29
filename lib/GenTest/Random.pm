@@ -51,7 +51,6 @@ require Exporter;
 
 use Carp;
 use GenTest;
-use GenTest::Random::Linear;
 use Cwd;
 
 =pod
@@ -128,6 +127,7 @@ use constant JSON_PATHLEG_MEMBER    => 0;
 use constant JSON_PATHLEG_ARRAYLOC  => 1;
 use constant JSON_PATHLEG_DBLASTER  => 2;
 
+our $PRNG = 'Linear';
 
 my %dict_exists;
 my %dict_data;
@@ -228,7 +228,9 @@ sub new {
 		'varchar_length'	=> RANDOM_VARCHAR_LENGTH
 	}, %args );
 
-	$prng->[RANDOM_GENERATOR] = GenTest::Random::Linear->new($seed);
+        my $impl = 'GenTest::Random::' . $PRNG;
+        eval "require $impl" or confess;
+	$prng->[RANDOM_GENERATOR] = $impl->new($seed);
 
 	return $prng;
 }
