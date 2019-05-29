@@ -30,7 +30,7 @@ require Exporter;
 	FIELD_TYPE_SET
 	FIELD_TYPE_YEAR
 	FIELD_TYPE_BLOB
-  FIELD_TYPE_TEXT
+	FIELD_TYPE_TEXT
 	FIELD_TYPE_DICT
 	FIELD_TYPE_DIGIT
 	FIELD_TYPE_LETTER
@@ -51,6 +51,7 @@ require Exporter;
 
 use Carp;
 use GenTest;
+use GenTest::Random::Linear;
 use Cwd;
 
 =pod
@@ -63,23 +64,13 @@ decided to create a uniform interface so that the underlying
 pseudo-random function or module can be changed without affecting the
 rest of the software.
 
-The important thing to note is that several pseudo-random number
-generators may be active at the same time, seeded with different
-values. Therefore the underlying pseudo-random function must not rely
-on perlfunc's srand() and rand() because those maintain a single
-system-wide pseudo-random sequence.
-
-This module is equipped with it's own Linear Congruential Random
-Number Generator, see
-http://en.wikipedia.org/wiki/Linear_congruential_generator For
-efficiency, math is done in integer mode
+By default this module uses GenTest::Random::Linear
 
 =cut
 
-use constant RANDOM_SEED		=> 0;
-use constant RANDOM_GENERATOR		=> 1;
-use constant RANDOM_VARCHAR_LENGTH	=> 2;
-use constant RANDOM_STRBUF          	=> 3;
+use constant RANDOM_GENERATOR		=> 0;
+use constant RANDOM_VARCHAR_LENGTH	=> 1;
+use constant RANDOM_STRBUF          	=> 2;
 
 use constant FIELD_TYPE_NUMERIC		=> 2;
 use constant FIELD_TYPE_STRING		=> 3;
@@ -228,102 +219,35 @@ my %name2range = (
         'bigint_positive'       => [1, 18446744073709551615]
 );
 
-my $prng_class;
-
-1;
-
 sub new {
     my $class = shift;
+    my %args = @_;
+    my $seed = delete $args{seed};
 
 	my $prng = $class->SUPER::new({
-		'seed'			=> RANDOM_SEED,
 		'varchar_length'	=> RANDOM_VARCHAR_LENGTH
-	}, @_ );
+	}, %args );
 
-
-	$prng->setSeed($prng->seed() > 0 ? $prng->seed() : 1);
-
-#	say("Initializing PRNG with seed '".$prng->seed()."' ...");
-
-	$prng->[RANDOM_GENERATOR] = $prng->seed();
+	$prng->[RANDOM_GENERATOR] = GenTest::Random::Linear->new($seed);
 
 	return $prng;
 }
 
-sub seed {
-	return $_[0]->[RANDOM_SEED];
-}
 
 sub setSeed {
-	$_[0]->[RANDOM_SEED] = $_[1];
-	$_[0]->[RANDOM_GENERATOR] = $_[1];
+    return $_[0]->[RANDOM_GENERATOR]->setSeed($_[1]);
 }
 
-sub update_generator {
-	{
-		use integer;
-		$_[0]->[RANDOM_GENERATOR] =
-			$_[0]->[RANDOM_GENERATOR] * 1103515245 + 12345;
-	}
-}
-
-### Random unsigned integer. 16 bit on 32-bit platforms, 48 bit on
-### 64-bit platforms. For internal use in Random.pm. Use int() or
-### uint16() instead.
-sub urand {
-    use integer;
-    update_generator($_[0]);
-    ## The lower bits are of bad statsictical quality in an LCG, so we
-    ## just use the higher bits.
-
-    ## Unfortunetaly, >> is an arithemtic shift so we shift right 15
-    ## bits and have take the absoulte value off that to get a 16-bit
-    ## unsigned random value.
-
-    my $rand = $_[0]->[RANDOM_GENERATOR] >> 15;
-
-    ## Can't use abs() since abs() is a function that use float (SIC!)
-    if ($rand < 0) {
-        return -$rand;
-    } else {
-        return $rand;
-    }
-}
-
-### Random unsigned 16-bit integer
 sub uint16 {
-    use integer;
-    # urand() is manually inlined for efficiency
-    update_generator($_[0]);
-    return $_[1] +
-        ((($_[0]->[RANDOM_GENERATOR] >> 15) & 0xFFFF) % ($_[2] - $_[1] + 1));
+    return $_[0]->[RANDOM_GENERATOR]->uint16($_[1], $_[2]);
 }
 
-### Signed 64-bit integer of any range.
-### Slower, so use uint16 wherever possible.
 sub int {
-    my $rand;
-  confess unless $_[1] < 0 or $_[2] - $_[1] > 65535;
-    {
-        use integer;
-        # urand() is manually inlined for efficiency
-        update_generator($_[0]);
-        # Since this may be a 64-bit platform, we mask down to 16 bit
-        # to ensure the division below becomes correct.
-        $rand = ($_[0]->[RANDOM_GENERATOR] >> 15) & 0xFFFF;
-    }
-    return int($_[1] + (($rand / 0x10000) * ($_[2] - $_[1] + 1)));
+    return $_[0]->[RANDOM_GENERATOR]->int($_[1], $_[2]);
 }
 
-### Signed 64-bit float of any range.
 sub float {
-	my $rand;
-	# urand() is manually inlined for efficiency
-	update_generator($_[0]);
-	# Since this may be a 64-bit platform, we mask down to 16 bit
-	# to ensure the division below becomes correct.
-	$rand = ($_[0]->[RANDOM_GENERATOR] >> 15) & 0xFFFF;
-	return $_[1] + (($rand / 0x10000) * ($_[2] - $_[1] + 1));
+    return $_[0]->[RANDOM_GENERATOR]->float($_[1], $_[2]);
 }
 
 sub digit {
