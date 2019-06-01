@@ -66,7 +66,7 @@ use constant MYSQLD_CONFIG_FILE => 27;
 use constant MYSQLD_USER => 28;
 use constant MYSQLD_MAJOR_VERSION => 29;
 use constant MYSQLD_CLIENT_BINDIR => 30;
-use constant MYSLQD_SERVER_VARIABLES => 31;
+use constant MYSQLD_SERVER_VARIABLES => 31;
 
 use constant MYSQLD_PID_FILE => "mysql.pid";
 use constant MYSQLD_ERRORLOG_FILE => "mysql.err";
@@ -1029,7 +1029,7 @@ sub checkErrorLogForErrors {
 
 sub serverVariables {
     my $self = shift;
-    if (not keys %{$self->[MYSLQD_SERVER_VARIABLES]}) {
+    if (not keys %{$self->[MYSQLD_SERVER_VARIABLES]}) {
         my $dbh = $self->dbh;
         return undef if not defined $dbh;
         my $sth = $dbh->prepare("SHOW VARIABLES");
@@ -1039,9 +1039,9 @@ sub serverVariables {
             $vars{$array_ref->[0]} = $array_ref->[1];
         }
         $sth->finish();
-        $self->[MYSLQD_SERVER_VARIABLES] = \%vars;
+        $self->[MYSQLD_SERVER_VARIABLES] = \%vars;
     }
-    return $self->[MYSLQD_SERVER_VARIABLES];
+    return $self->[MYSQLD_SERVER_VARIABLES];
 }
 
 sub serverVariable {
