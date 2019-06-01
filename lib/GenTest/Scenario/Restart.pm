@@ -58,9 +58,7 @@ sub new {
   if (!$self->getTestType) {
     $self->setTestType('normal');
   }
-  if (not defined $self->getProperty('threads')) {
-    $self->setProperty('threads', 1);
-  }
+  $self->setPropertyDefauls(threads => 1);
 
   $self->printTitle($self->getTestType." restart ($self->[SCENARIO_RESTART_INTERVAL] sec)");
 

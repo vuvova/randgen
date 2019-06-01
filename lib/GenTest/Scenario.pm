@@ -47,13 +47,7 @@ sub new {
   if (defined $scenario->getProperty('scenario-type')) {
     $scenario->setTestType($scenario->getProperty('scenario-type'));
   }
-  if (!defined $scenario->getProperty('database')) {
-    $scenario->setProperty('database','test');
-  }
-  if (!defined $scenario->getProperty('user')) {
-    $scenario->setProperty('user','root');
-  }
-
+  $scenario->setPropertyDefaults(qw/database test user root/);
   return $scenario;
 }
 
@@ -87,6 +81,14 @@ sub getProperty {
 
 sub setProperty {
   $_[0]->[SCENARIO_PROPERTIES]->{$_[1]}= $_[2];
+}
+
+sub setPropertyDefaults {
+  my $self = shift;
+  my %defs = @_;
+  while(my ($k,$v)=each %defs) {
+    $self->setProperty($k, $v) unless defined $self->getProperty($k);
+  }
 }
 
 # Scenario can run (consequently or simultaneously) an arbitrary

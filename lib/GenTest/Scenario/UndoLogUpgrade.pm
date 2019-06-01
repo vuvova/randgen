@@ -77,21 +77,12 @@ sub new {
     $scenario->printTitle('Undo log upgrade');
   }
 
-  if (not defined $scenario->getProperty('grammar')) {
-    $scenario->setProperty('grammar', 'conf/mariadb/oltp.yy');
-  }
-  if (not defined $scenario->getProperty('gendata')) {
-    $scenario->setProperty('gendata', 'conf/mariadb/innodb_upgrade.zz');
-  }
-  if (not defined $scenario->getProperty('gendata1')) {
-    $scenario->setProperty('gendata1', $scenario->getProperty('gendata'));
-  }
-  if (not defined $scenario->getProperty('gendata-advanced1')) {
-    $scenario->setProperty('gendata-advanced1', $scenario->getProperty('gendata-advanced'));
-  }
-  if (not defined $scenario->getProperty('threads')) {
-    $scenario->setProperty('threads', 4);
-  }
+  $self->setPropertyDefaults(
+    grammar => 'conf/mariadb/oltp.yy',
+    gendata => 'conf/mariadb/innodb_upgrade.zz',
+    gendata1 => $self->getProperty('gendata'),
+    'gendata-advanced1' => $self->getProperty('gendata-advanced'),
+    threads => 4);
 
   # Set innodb-change-buffering=none if it's there is no value
   # for the option in the settings
