@@ -110,6 +110,9 @@ sub prepareServer {
   if (!exists $opts->{start_dirty}) {
     $opts->{start_dirty}= 0;
   }
+  if (!exists $opts->{afl}) {
+    $opts->{afl}= 0;
+  }
   if (!exists $opts->{general_log}) {
     $opts->{general_log}= 1;
   }
@@ -135,6 +138,7 @@ sub prepareServer {
                       port => $opts->{port},
                       start_dirty => $opts->{start_dirty},
                       valgrind => $opts->{valgrind},
+                      afl => $opts->{afl},
                       server_options => \@server_options,
                       general_log => $opts->{general_log},
                       user => $opts->{user}

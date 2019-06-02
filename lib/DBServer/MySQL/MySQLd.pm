@@ -67,6 +67,7 @@ use constant MYSQLD_USER => 28;
 use constant MYSQLD_MAJOR_VERSION => 29;
 use constant MYSQLD_CLIENT_BINDIR => 30;
 use constant MYSQLD_SERVER_VARIABLES => 31;
+use constant MYSQLD_AFL => 32;
 
 use constant MYSQLD_PID_FILE => "mysql.pid";
 use constant MYSQLD_ERRORLOG_FILE => "mysql.err";
@@ -87,6 +88,7 @@ sub new {
                                    'server_options' => MYSQLD_SERVER_OPTIONS,
                                    'start_dirty' => MYSQLD_START_DIRTY,
                                    'general_log' => MYSQLD_GENERAL_LOG,
+                                   'afl' => MYSQLD_AFL,
                                    'valgrind' => MYSQLD_VALGRIND,
                                    'valgrind_options' => MYSQLD_VALGRIND_OPTIONS,
                                    'config' => MYSQLD_CONFIG_CONTENTS,
@@ -462,6 +464,7 @@ sub startServer {
     # If we don't remove the existing pidfile, 
     # the server will be considered started too early, and further flow can fail
     unlink($self->pidfile);
+    unlink $self->socketfile;
     
     my $errorlog = $self->vardir."/".MYSQLD_ERRORLOG_FILE;
     
@@ -482,6 +485,12 @@ sub startServer {
             $val_opt = join(' ',@{$self->[MYSQLD_VALGRIND_OPTIONS]});
         }
         $command = "valgrind --time-stamp=yes --leak-check=yes --suppressions=".$self->valgrind_suppressionfile." ".$val_opt." ".$command;
+    } elsif ($self->[MYSQLD_AFL]) {
+        my $v = $self->vardir;
+        mkpath("$v/i");
+        mkpath("$v/o");
+        move("$v/prng.dat", "$v/i/");
+        $command = "xterm -geometry 80x25 -hold -rv -e 'afl-fuzz -m4096 -t60000 -i $v/i -o $v/o -f $v/prng.dat -- $command --log-error=$errorlog'";
     }
     $self->printInfo;
 
@@ -869,8 +878,6 @@ sub stopServer {
             $res= $self->term;
         } else {
             # clean up when server is not alive.
-            unlink $self->socketfile if -e $self->socketfile;
-            unlink $self->pidfile if -e $self->pidfile;
             $res= DBSTATUS_OK;
             say("Server has been stopped");
         }
@@ -948,8 +955,10 @@ sub waitForServerToStop {
 
 sub waitForServerToStart {
   my $self= shift;
+  my $newpid = shift;
   my $waits= 0;
   while (!$self->running && $waits < 120) {
+    $self->[MYSQLD_SERVERPID] = undef if $newpid;
     Time::HiRes::sleep(0.5);
     $waits++;
   }
@@ -1057,7 +1066,7 @@ sub running {
     } elsif (-f $self->pidfile) {
         my $pid= get_pid_from_file($self->pidfile);
         if ($pid and $pid =~ /^\d+$/) {
-          return kill(0,$pid);
+          return kill(0, $self->[MYSQLD_SERVERPID] = $pid);
         }
     } else {
         return 0;
