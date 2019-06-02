@@ -487,10 +487,11 @@ sub startServer {
         $command = "valgrind --time-stamp=yes --leak-check=yes --suppressions=".$self->valgrind_suppressionfile." ".$val_opt." ".$command;
     } elsif ($self->[MYSQLD_AFL]) {
         my $v = $self->vardir;
+        my $d = $self->datadir . "/prng.dat";
         mkpath("$v/i");
         mkpath("$v/o");
-        move("$v/prng.dat", "$v/i/");
-        $command = "xterm -geometry 80x25 -hold -rv -e 'afl-fuzz -m4096 -t60000 -i $v/i -o $v/o -f $v/prng.dat -- $command --log-error=$errorlog'";
+        move($d, "$v/i/");
+        $command = "xterm -geometry 80x25 -hold -rv -e 'afl-fuzz -m4096 -t60000 -i $v/i -o $v/o -f $d -- $command --log-error=$errorlog'";
     }
     $self->printInfo;
 

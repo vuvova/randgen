@@ -77,7 +77,8 @@ sub run {
       start_dirty => 1
     }
   );
-  my $prng_file = $self->getProperty('vardir') . '/prng.dat';
+  my $prng_file = $genserver->datadir . '/prng.dat';
+  open F, '>', $prng_file and close F; # create a file to disable __AFL_LOOP
 
   say("-- GEN server info: --");
   say($genserver->version());
@@ -153,17 +154,12 @@ sub run {
   return $self->finalize(STATUS_TEST_FAILURE,[$aflserver]) unless $status == STATUS_OK;
 
   while(1) {
-    $self->printStep("Reconnecting the AFL server");
-    $status = $aflserver->waitForServerToStart(1);
-    return $self->finalize(STATUS_TEST_FAILURE,[$aflserver]) unless $status;
-    last unless -f $prng_file;
+    $self->printStep("Create prng.dat");
+    unlink $prng_file;
+    $aflserver->dbh()->do("do 1"); # this causes the file to be created
     GenTest::Random::RePlayer::set_filename($prng_file);
     $self->printStep("Running test flow once");
     $status= $gentest->run();
-    unlink $prng_file;
-    return $self->finalize(STATUS_TEST_FAILURE,[$aflserver]) unless $status == STATUS_OK;
-    $self->printStep("Stopping the AFL server");
-    $status= $aflserver->stopServer;
     return $self->finalize(STATUS_TEST_FAILURE,[$aflserver]) unless $status == STATUS_OK;
   }
   $self->printStep("No $prng_file, exiting");

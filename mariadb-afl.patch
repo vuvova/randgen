@@ -1,0 +1,13 @@
+diff --git a/sql/sql_connect.cc b/sql/sql_connect.cc
+index cb030296eec..bc167f32ab8 100644
+--- a/sql/sql_connect.cc
++++ b/sql/sql_connect.cc
+@@ -1402,6 +1402,8 @@ void do_handle_one_connection(CONNECT *connect)
+       mysql_audit_release(thd);
+       if (do_command(thd))
+ 	break;
++      if (access("prng.dat", F_OK) && !__AFL_LOOP(99999999))
++        break;
+     }
+     end_connection(thd);
+ 
